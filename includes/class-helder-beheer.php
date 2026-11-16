@@ -71,11 +71,14 @@ class Helder_Beheer {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display only.
 		$melding = isset( $_GET['helder_melding'] ) ? sanitize_key( wp_unslash( $_GET['helder_melding'] ) ) : '';
 		$teksten = array(
-			'gekoppeld'  => array( 'success', __( 'Your site is connected. Helder chat now appears on your site.', 'helder' ) ),
-			'ontkoppeld' => array( 'success', __( 'Your site is disconnected from Helder.', 'helder' ) ),
-			'bewaard'    => array( 'success', __( 'Settings saved.', 'helder' ) ),
-			'state'      => array( 'error', __( 'This link has expired. Click Connect with Helder again.', 'helder' ) ),
-			'mislukt'    => array( 'error', __( 'Connecting did not work. Click Connect with Helder again.', 'helder' ) ),
+			'gekoppeld'       => array( 'success', __( 'Your site is connected. Helder chat now appears on your site.', 'helder' ) ),
+			'ontkoppeld'      => array( 'success', __( 'Your site is disconnected from Helder.', 'helder' ) ),
+			'bewaard'         => array( 'success', __( 'Settings saved.', 'helder' ) ),
+			'state'           => array( 'error', __( 'This link has expired. Click Connect with Helder again.', 'helder' ) ),
+			'mislukt'         => array( 'error', __( 'Connecting did not work. Click Connect with Helder again.', 'helder' ) ),
+			'woo_gekoppeld'   => array( 'success', __( 'Helder can now read your WooCommerce orders.', 'helder' ) ),
+			'woo_ingetrokken' => array( 'success', __( 'Helder no longer has access to WooCommerce.', 'helder' ) ),
+			'woo_mislukt'     => array( 'error', __( 'Giving access to WooCommerce did not work. Please try again.', 'helder' ) ),
 		);
 		if ( ! isset( $teksten[ $melding ] ) ) {
 			return;
@@ -146,6 +149,8 @@ class Helder_Beheer {
 					</table>
 					<?php submit_button( __( 'Save', 'helder' ) ); ?>
 				</form>
+				<?php Helder_WooCommerce::sectie( $koppeling ); ?>
+				<h2><?php esc_html_e( 'Disconnect', 'helder' ); ?></h2>
 				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 					<input type="hidden" name="action" value="helder_ontkoppel" />
 					<?php wp_nonce_field( 'helder_ontkoppel' ); ?>

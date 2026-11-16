@@ -2,8 +2,8 @@
 /**
  * Plugin Name:       Helder
  * Plugin URI:        https://helderhq.com/koppeling-website
- * Description:       Adds Helder chat to your site with one click and lets logged-in visitors chat without verifying again.
- * Version:           0.1.0
+ * Description:       Adds Helder chat to your site with one click, lets logged-in visitors chat without verifying again and, with WooCommerce, lets the chat answer questions about orders.
+ * Version:           0.2.0
  * Requires at least: 6.5
  * Requires PHP:      7.4
  * Author:            Helder
@@ -18,7 +18,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'HELDER_VERSION', '0.1.0' );
+define( 'HELDER_VERSION', '0.2.0' );
 define( 'HELDER_PLUGIN_FILE', __FILE__ );
 
 if ( ! defined( 'HELDER_APP_URL' ) ) {
@@ -35,6 +35,7 @@ require_once __DIR__ . '/includes/class-helder-koppeling.php';
 require_once __DIR__ . '/includes/class-helder-script.php';
 require_once __DIR__ . '/includes/class-helder-klanttoken.php';
 require_once __DIR__ . '/includes/class-helder-beheer.php';
+require_once __DIR__ . '/includes/class-helder-woocommerce.php';
 
 add_action(
 	'init',
@@ -47,6 +48,7 @@ Helder_Koppeling::init();
 Helder_Script::init();
 Helder_Klanttoken::init();
 Helder_Beheer::init();
+Helder_WooCommerce::init();
 
 register_activation_hook( __FILE__, array( 'Helder_Koppeling', 'activeer' ) );
 register_deactivation_hook( __FILE__, array( 'Helder_Koppeling', 'deactiveer' ) );

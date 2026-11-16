@@ -74,12 +74,12 @@ class Helder_Api {
 	}
 
 	/**
-	 * Asks Helder whether the connection still exists.
+	 * Asks Helder whether the connection still exists, and whether Helder can read WooCommerce.
 	 *
 	 * @param array $koppeling The stored connection.
-	 * @return bool|null True or false, or null when Helder could not be reached.
+	 * @return array{gekoppeld: bool, woocommerce: bool}|null Null when Helder could not be reached.
 	 */
-	public static function nog_gekoppeld( array $koppeling ) {
+	public static function status( array $koppeling ) {
 		$uit = self::post(
 			'/api/wordpress/status',
 			array(
@@ -90,7 +90,61 @@ class Helder_Api {
 		if ( is_wp_error( $uit ) || 200 !== $uit['status'] || ! is_array( $uit['body'] ) || ! isset( $uit['body']['gekoppeld'] ) ) {
 			return null;
 		}
-		return true === $uit['body']['gekoppeld'];
+		return array(
+			'gekoppeld'   => true === $uit['body']['gekoppeld'],
+			'woocommerce' => isset( $uit['body']['woocommerce'] ) && true === $uit['body']['woocommerce'],
+		);
+	}
+
+	/**
+	 * Asks Helder whether the connection still exists.
+	 *
+	 * @param array $koppeling The stored connection.
+	 * @return bool|null True or false, or null when Helder could not be reached.
+	 */
+	public static function nog_gekoppeld( array $koppeling ) {
+		$status = self::status( $koppeling );
+		return null === $status ? null : $status['gekoppeld'];
+	}
+
+	/**
+	 * Asks Helder for a short-lived signed state for WooCommerce's approval flow.
+	 *
+	 * @param array  $koppeling  The stored connection.
+	 * @param string $winkel_url The shop's home URL.
+	 * @return string|WP_Error The state.
+	 */
+	public static function woo_state( array $koppeling, $winkel_url ) {
+		$uit = self::post(
+			'/api/wordpress/woocommerce/start',
+			array(
+				'sleutel'   => $koppeling['sleutel'],
+				'koppelId'  => $koppeling['koppel_id'],
+				'winkelUrl' => $winkel_url,
+			)
+		);
+		if ( is_wp_error( $uit ) ) {
+			return $uit;
+		}
+		if ( 200 !== $uit['status'] || ! is_array( $uit['body'] ) || empty( $uit['body']['state'] ) ) {
+			return new WP_Error( 'helder_woo', __( 'Helder did not accept the request.', 'helder' ) );
+		}
+		return (string) $uit['body']['state'];
+	}
+
+	/**
+	 * Tells Helder to stop reading WooCommerce for this site. The chat stays connected.
+	 *
+	 * @param array $koppeling The stored connection.
+	 */
+	public static function woo_intrekken( array $koppeling ) {
+		self::post(
+			'/api/wordpress/woocommerce/intrekken',
+			array(
+				'sleutel'  => $koppeling['sleutel'],
+				'koppelId' => $koppeling['koppel_id'],
+			)
+		);
 	}
 
 	/**
