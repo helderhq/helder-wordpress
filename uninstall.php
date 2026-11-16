@@ -25,5 +25,13 @@ if ( is_array( $helder_koppeling ) && ! empty( $helder_koppeling['sleutel'] ) &&
 		)
 	);
 }
+// The read-only keys WooCommerce made for Helder (named "Helder - API (<date>)").
+global $wpdb;
+$helder_tabel = $wpdb->prefix . 'woocommerce_api_keys';
+// phpcs:disable WordPress.DB.DirectDatabaseQuery -- WooCommerce has no API to delete keys; it uses $wpdb too.
+if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $helder_tabel ) ) ) === $helder_tabel ) {
+	$wpdb->query( $wpdb->prepare( 'DELETE FROM %i WHERE description LIKE %s', $helder_tabel, $wpdb->esc_like( 'Helder - API (' ) . '%' ) );
+}
+// phpcs:enable WordPress.DB.DirectDatabaseQuery
 delete_option( 'helder_koppeling' );
 wp_clear_scheduled_hook( 'helder_controle' );

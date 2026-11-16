@@ -114,22 +114,32 @@ class Helder_Koppeling {
 		if ( null !== $koppeling ) {
 			Helder_Api::ontkoppel( $koppeling );
 		}
+		Helder_WooCommerce::wis_keys();
 		Helder_Opslag::wis();
 		wp_safe_redirect( self::beheer_url( array( 'helder_melding' => 'ontkoppeld' ) ) );
 		exit;
 	}
 
 	/**
-	 * Daily: if the connection was removed in Helder, forget it here too.
-	 * When Helder cannot be reached, nothing changes.
+	 * Daily: if the connection was removed in Helder, forget it here too, and remember whether
+	 * Helder can read WooCommerce. When Helder cannot be reached, nothing changes.
 	 */
 	public static function controleer() {
 		$koppeling = Helder_Opslag::koppeling();
 		if ( null === $koppeling ) {
 			return;
 		}
-		if ( false === Helder_Api::nog_gekoppeld( $koppeling ) ) {
+		$status = Helder_Api::status( $koppeling );
+		if ( null === $status ) {
+			return;
+		}
+		if ( ! $status['gekoppeld'] ) {
+			Helder_WooCommerce::wis_keys();
 			Helder_Opslag::wis();
+			return;
+		}
+		if ( $status['woocommerce'] !== $koppeling['woocommerce'] ) {
+			Helder_Opslag::zet_woocommerce( $status['woocommerce'] );
 		}
 	}
 

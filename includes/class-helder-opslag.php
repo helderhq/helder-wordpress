@@ -18,7 +18,7 @@ class Helder_Opslag {
 	/**
 	 * The current connection, or null when the site is not connected.
 	 *
-	 * @return array{sleutel: string, koppel_id: string, klant_login_geheim: string, host: string, klanttoken: bool}|null
+	 * @return array{sleutel: string, koppel_id: string, klant_login_geheim: string, host: string, klanttoken: bool, woocommerce: bool}|null
 	 */
 	public static function koppeling() {
 		$waarde = get_option( self::OPTIE );
@@ -31,6 +31,7 @@ class Helder_Opslag {
 			'klant_login_geheim' => isset( $waarde['klant_login_geheim'] ) ? (string) $waarde['klant_login_geheim'] : '',
 			'host'               => isset( $waarde['host'] ) ? (string) $waarde['host'] : '',
 			'klanttoken'         => ! isset( $waarde['klanttoken'] ) || (bool) $waarde['klanttoken'],
+			'woocommerce'        => ! empty( $waarde['woocommerce'] ),
 		);
 	}
 
@@ -54,6 +55,20 @@ class Helder_Opslag {
 			return;
 		}
 		$koppeling['klanttoken'] = (bool) $aan;
+		self::bewaar( $koppeling );
+	}
+
+	/**
+	 * Remembers whether Helder can read WooCommerce, as Helder last reported it.
+	 *
+	 * @param bool $aan Whether the WooCommerce connection is active in Helder.
+	 */
+	public static function zet_woocommerce( $aan ) {
+		$koppeling = self::koppeling();
+		if ( null === $koppeling ) {
+			return;
+		}
+		$koppeling['woocommerce'] = (bool) $aan;
 		self::bewaar( $koppeling );
 	}
 
