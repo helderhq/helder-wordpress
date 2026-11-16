@@ -1,0 +1,39 @@
+name: Uitgave
+
+# Een tag vX.Y.Z maakt de zip (zonder de bestanden met export-ignore), hangt hem aan de GitHub
+# Release en zet de versie in de SVN van WordPress.org zodra SVN_USERNAME en SVN_PASSWORD bestaan.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  uitgave:
+    runs-on: ubuntu-latest
+    env:
+      SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+      SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Versie klopt met de tag
+        run: |
+          versie="${GITHUB_REF_NAME#v}"
+          grep -q "Version:           $versie" helder.php
+          grep -q "Stable tag: $versie" readme.txt
+          grep -q "define( 'HELDER_VERSION', '$versie' );" helder.php
+      - name: Zip maken
+        run: |
+          mkdir -p dist
+          git archive --format=zip --prefix=helder/ -o dist/helder.zip HEAD
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/helder.zip
+          generate_release_notes: true
+      - name: Naar WordPress.org
+        if: ${{ env.SVN_USERNAME != '' }}
+        uses: 10up/action-wordpress-plugin-deploy@stable
+        env:
+          SLUG: helder
