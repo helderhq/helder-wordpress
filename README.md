@@ -16,6 +16,8 @@ composer lint   # PHPCS with the WordPress Coding Standards
 composer test   # token format and loader tag
 ```
 
+A throwaway WooCommerce shop over https for testing: see [`test-shop/`](test-shop/README.md).
+
 Point the plugin at another Helder environment with `define( 'HELDER_APP_URL', 'http://localhost:3000' );` in `wp-config.php`.
 
 License: GPL-2.0-or-later.
