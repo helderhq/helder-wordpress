@@ -1,0 +1,89 @@
+# Test shop: WordPress + WooCommerce + this plugin, reachable over https through a Cloudflare tunnel.
+# For testing only, never for a real shop. See README.md in this folder.
+name: helder-test-shop
+
+services:
+  db:
+    image: mariadb:11
+    environment:
+      MARIADB_DATABASE: wordpress
+      MARIADB_USER: wordpress
+      MARIADB_PASSWORD: wordpress
+      MARIADB_RANDOM_ROOT_PASSWORD: "1"
+    volumes:
+      - db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      retries: 30
+
+  wordpress:
+    image: wordpress:php8.3-apache
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${SHOP_PORT:-8080}:80"
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_NAME: wordpress
+      HELDER_APP_URL: ${HELDER_APP_URL:-https://app.helderhq.com}
+      HELDER_WIDGET_URL: ${HELDER_WIDGET_URL:-https://widget.helderhq.com/helder.js}
+      WORDPRESS_CONFIG_EXTRA: |
+        // Behind the tunnel every request arrives as plain http; tell WordPress it is https.
+        if ( isset( $$_SERVER['HTTP_X_FORWARDED_PROTO'] ) && 'https' === $$_SERVER['HTTP_X_FORWARDED_PROTO'] ) {
+          $$_SERVER['HTTPS'] = 'on';
+        }
+        define( 'HELDER_APP_URL', getenv( 'HELDER_APP_URL' ) );
+        define( 'HELDER_WIDGET_URL', getenv( 'HELDER_WIDGET_URL' ) );
+    volumes:
+      - wp:/var/www/html
+      - ..:/var/www/html/wp-content/plugins/helder:ro
+
+  # Quick tunnel: an https address on *.trycloudflare.com that changes on every start.
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    depends_on:
+      - wordpress
+    profiles: ["tunnel"]
+    command: ["tunnel", "--no-autoupdate", "--metrics", "0.0.0.0:2000", "--url", "http://wordpress:80"]
+
+  # Named tunnel: a fixed hostname in your own Cloudflare account (TUNNEL_TOKEN and SHOP_URL in .env).
+  tunnel-named:
+    image: cloudflare/cloudflared:latest
+    depends_on:
+      - wordpress
+    profiles: ["named"]
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:-}
+    command: ["tunnel", "--no-autoupdate", "run"]
+
+  # One-off: install WordPress, WooCommerce with sample data, and activate the plugin.
+  setup:
+    image: wordpress:cli-php8.3
+    user: "33:33"
+    depends_on:
+      wordpress:
+        condition: service_started
+    profiles: ["setup"]
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_NAME: wordpress
+      SHOP_URL: ${SHOP_URL:-}
+      SHOP_PORT: ${SHOP_PORT:-8080}
+      HELDER_APP_URL: ${HELDER_APP_URL:-https://app.helderhq.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-helder-test}
+      WP_CLI_CACHE_DIR: /tmp/wp-cli-cache
+    volumes:
+      - wp:/var/www/html
+      - ..:/var/www/html/wp-content/plugins/helder:ro
+      - ./setup.sh:/setup.sh:ro
+    entrypoint: ["sh", "/setup.sh"]
+
+volumes:
+  db:
+  wp:
